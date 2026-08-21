@@ -56,6 +56,14 @@ experiments/          # one script per prompting technique
 tests/                # (empty) automated test suite — see Roadmap
 ```
 
+| # | Pattern | Why it works | Test it enables |
+| --- | --- | --- | --- |
+| 1 | Ask for JSON, not prose | Free text reformats between runs; JSON keeps a fixed shape | `json.loads()` parses; required keys present |
+| 2 | Show examples, don't describe | The model copies a demonstrated format more reliably than a described one | Shape identical across N runs |
+| 3 | Fence the data in `###` markers | Marking input as data-only stops the model obeying instructions hidden inside it | Injected "reply BANANA" is ignored; valid JSON still returned |
+| 4 | State the output contract in the prompt | Without it the model drops keys entirely; with it the key set is fixed | Both keys present on every input, `null` when absent |
+| 5 | Compare prompts at `temperature=1` | Temperature 0 hides weak prompts — differences only surface under sampling | Pass-rate over N runs, not a single pass/fail |
+
 ## Roadmap
 
 The experiments are exploratory scripts, not an automated test suite — they
@@ -69,3 +77,4 @@ print results and assert inline. Planned next:
 - System / role prompts and multi-turn conversation support in `ask()`
 - Additional techniques: chain-of-thought, grounding and refusal, prompt
   injection, self-consistency, prompt chaining
+
