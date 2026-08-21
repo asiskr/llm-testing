@@ -56,6 +56,8 @@ experiments/          # one script per prompting technique
 tests/                # (empty) automated test suite — see Roadmap
 ```
 
+## Paterns
+
 | # | Pattern | Why it works | Test it enables |
 | --- | --- | --- | --- |
 | 1 | Ask for JSON, not prose | Free text reformats between runs; JSON keeps a fixed shape | `json.loads()` parses; required keys present |
