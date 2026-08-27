@@ -4,3 +4,4 @@ __pycache__/
 .venv-new/
 returns-bot/venv/
 chat_log.jsonl
+chroma_db/

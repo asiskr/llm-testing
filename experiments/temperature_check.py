@@ -1,4 +1,3 @@
-
 import sys
 sys.path.append(".")
 
@@ -13,3 +12,4 @@ for i in range(3):
 print("\n--- temperature 1 ---")
 for i in range(3):
     print(ask(prompt, temperature=1))
+
