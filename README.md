@@ -80,3 +80,35 @@ print results and assert inline. Planned next:
 - Additional techniques: chain-of-thought, grounding and refusal, prompt
   injection, self-consistency, prompt chaining
 
+
+## Evaluation policy
+
+| Metric | Threshold | N | Pass-rate |
+|---|---|---|---|
+| Faithfulness | 0.8 | 5 | 5/5 |
+| ContextualRecall | 0.7 | 5 | 4/5 |
+| ContextualPrecision | 0.7 | 5 | 4/5 |
+| AnswerRelevancy | 0.7 | 5 | 4/5 |
+| ContextualRelevancy | 0.5 | 3 | 3/3 |
+
+**Why these numbers**
+
+- Faithfulness requires 5/5 — a single hallucinated run means a user
+  could see a false answer. Other metrics tolerate one flaky run.
+- Thresholds are set mid-range, not at the observed score. Scores from
+  the judge vary between runs, so a threshold set at the boundary
+  produces false failures.
+- Retry is limited to rate-limit errors only. Retrying on any failure
+  would mask genuine quality regressions.
+
+**Test tiers**
+
+| Tier | What | When |
+|---|---|---|
+| Offline | chunking + retrieval substring checks | every commit |
+| Live smoke | one query per metric, N=1 | every PR |
+| Full eval | all goldens × all metrics, N=5 | nightly |
+
+Live evals are rate-limited by the free-tier LLM provider: 5 runs of a
+single metric took 2 minutes and hit a 429. Running the full matrix on
+every commit is not viable.
