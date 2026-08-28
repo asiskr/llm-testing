@@ -20,5 +20,5 @@ print("after add:", col.count())
 
 res = col.query(query_texts=["how long until I get my money back"], n_results=3)
 
-for doc, dist in zip(res["documents"][0], res["distances"][0]):
+for doc, dist in zip(res["documents"][0], res["distances"][0], strict=True):
     print(round(dist, 3), "|", doc)

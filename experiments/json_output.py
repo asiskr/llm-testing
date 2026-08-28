@@ -1,10 +1,9 @@
-import sys
 import json
+import sys
 
 sys.path.append(".")
 
-from src.llm_client import ask
-
+from llm_testing.llm_client import ask
 
 prompt_plain = "Extract name and age from: Rahul is 25 years old and lives in Pune."
 
@@ -35,5 +34,5 @@ print(type(data["age"]))
 print("----------------------------")
 
 assert "name" in data
-assert type(data["age"]) == int
+assert type(data["age"]) is int
 print("PASS")

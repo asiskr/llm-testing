@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-testing"
+version = "0.2.0"
+description = "Prompt engineering experiments and an automated test suite for a grounded FAQ bot and RAG pipeline"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Asis" }]
+keywords = ["llm", "testing", "rag", "prompt-engineering", "deepeval"]
+
+dependencies = [
+    "groq==1.6.0",
+    "python-dotenv==1.2.3",
+    "chromadb==1.5.9",
+    "numpy>=2.0",  # used directly by the embedding experiments
+]
+
+[project.optional-dependencies]
+dev = [
+    "deepeval==4.1.10",
+    "pytest==9.1.1",
+    "pytest-rerunfailures==16.6",
+    "pytest-repeat==0.9.4",
+    "ruff==0.14.5",
+    "pre-commit>=4.0",
+]
+
+[project.scripts]
+llm-testing-chat = "llm_testing.chat_cli:main"
+llm-testing-rag = "llm_testing.rag_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "live: test makes real API calls (costs quota, output is non-deterministic)",
+]
+# Groq's free tier caps at 8000 tokens/min and a full live run burns that in
+# under a minute. Retry ONLY on rate limits — never on an assertion failure,
+# which must stay visible.
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--reruns=3",
+    "--reruns-delay=20",
+    "--only-rerun=RateLimitError",
+    "--only-rerun=RetryError",
+]
+
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "experiments"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "SIM",  # simplify
+]

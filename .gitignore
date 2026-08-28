@@ -1,7 +1,32 @@
+# Secrets
 .env
+
+# Virtual environments
 .venv/
-__pycache__/
 .venv-new/
+venv/
 returns-bot/venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# Test & eval artefacts
+.deepeval/
+.deepeval-cache.json
+.deepeval_telemetry.txt
+temp_test_run_data.json
 chat_log.jsonl
+
+# RAG vector store (rebuilt from data/policy.txt)
 chroma_db/
+
+# OS
+.DS_Store

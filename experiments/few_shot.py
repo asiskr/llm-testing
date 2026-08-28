@@ -1,9 +1,9 @@
 import sys
-sys.path.append(".")
-from src.llm_client import ask
 
+sys.path.append(".")
 import json
 
+from llm_testing.llm_client import ask
 
 prompt1 = """
 Extract name and age as JSON with keys "name" and "age"
@@ -20,15 +20,14 @@ Text: Priya is 30 years old.
 Output:
 
 """
-for i in range(5):
+for _ in range(5):
     out = ask(prompt1, temperature=1)
     print("zero:", out[:40])
 
-for i in range(5):
+for _ in range(5):
     out = ask(prompt2, temperature=1)
     print("few :", out[:40])
 
 
-print(json.loads(ask(prompt2)))    
-print(json.loads(ask(prompt1)))    
-
+print(json.loads(ask(prompt2)))
+print(json.loads(ask(prompt1)))

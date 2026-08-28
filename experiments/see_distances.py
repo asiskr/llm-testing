@@ -1,13 +1,13 @@
-from experiments.rag_app import build_collection
+from llm_testing.rag import build_collection
 
 col = build_collection()
 
 QUERIES = [
-    "how long until I get my money back", 
-    "who pays return shipping",        
-    "how can I track my item",           
+    "how long until I get my money back",
+    "who pays return shipping",
+    "how can I track my item",
     "can I change my address for the return",
-    "what is the capital of france",  
+    "what is the capital of france",
     "I missed my return date, can I reschedule it",
 ]
 

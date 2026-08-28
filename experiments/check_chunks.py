@@ -1,4 +1,4 @@
-from experiments.rag_app import load_chunks
+from llm_testing.rag import load_chunks
 
 chunks = load_chunks()
 
