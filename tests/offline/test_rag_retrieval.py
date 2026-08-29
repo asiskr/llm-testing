@@ -30,7 +30,7 @@ GOLDEN = [
     ("what can be the last day of return", "30 days of delivery."),
     ("on what source of payement will I get my refund", "original payment method only."),
     ("Who pays the return shipping?", "The customer pays for return shipping"),
-    ("Can I return the sale item?", "final sale"),  
+    ("Can I return the sale item?", "final sale"),
     ("I missed my return date, can I reschedule it", "30 days"),
 ]
 
@@ -79,6 +79,7 @@ def test_off_corpus_query_retrieves_nothing(col, query):
     """
     _ids, docs = retrieve(col, query)
     assert docs == [], f"unrelated query retrieved context: {docs}"
+
 
 @pytest.mark.xfail(
     reason="k=2 is too small: 'return date' pulls policy-1 and policy-3, so the "
