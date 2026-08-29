@@ -1,3 +1,9 @@
+[![CI](https://github.com/asiskr/llm-testing/actions/workflows/ci.yml/badge.svg)](https://github.com/asiskr/llm-testing/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+
 # llm-testing
 
 Prompt engineering experiments and an automated test suite for two LLM
@@ -173,24 +179,19 @@ Run from the project root: `python -m experiments.<name>`
 
 | Tier | What | When |
 |---|---|---|
-| Offline | chunking, retrieval, prompt invariants, message assembly | every commit (CI) |
-| Live smoke | one query per metric, N=1 | every PR, manually |
-| Full eval | all goldens × all metrics, N=5 | nightly |
+| Offline | chunking, retrieval, prompt invariants, message assembly | every push (CI) |
+| Live smoke | 3 judged metrics, one query each, N=1 | every push (CI) |
+| Full eval | all goldens × all metrics, N=5 | on demand — `make test-live` |
+
+The smoke job runs one test per failure mode rather than one per metric:
+`recall_correct` (retrieval broke), `faithful_to_chunks` (the model invented
+something), `is_refused` (the refusal path broke). It skips on pull requests
+from forks, which have no access to secrets.
 
 Live evals are rate-limited by the free tier: Groq allows 8000 tokens/min, and a
 full live run burns that in under a minute. `pyproject.toml` retries **only** on
 rate-limit errors (`--only-rerun RateLimitError`), never on assertion failures,
 so a real regression still shows up red.
-
-## Roadmap
-
-- [x] Offline tests that run in CI with no credentials
-- [x] Prompt-injection tests
-- [x] Packaged layout, `pyproject.toml`, ruff, pre-commit, GitHub Actions
-- [ ] Pass-rate assertions over N runs (`pytest-repeat` is installed)
-- [ ] Pydantic schema validation in place of hand-written key checks
-- [ ] Nightly scheduled workflow for the full eval matrix
-- [ ] Hybrid retrieval (keyword + vector) and a reranking step
 
 ## License
 
