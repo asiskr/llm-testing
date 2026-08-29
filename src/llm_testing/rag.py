@@ -3,11 +3,15 @@
 Sentence-level chunks are embedded into an in-memory Chroma collection;
 retrieval drops anything past MAX_DISTANCE so an off-topic question returns
 no context at all and the caller can refuse instead of guessing.
+
+Both stages are traced to Langfuse as nested spans, so a bad answer can be
+attributed to retrieval or generation without reproducing it locally.
 """
 
 from pathlib import Path
 
 import chromadb
+from langfuse import get_client, observe
 
 from llm_testing.llm_client import ask
 
@@ -39,7 +43,13 @@ def build_collection():
     return col
 
 
+# capture_input=False: @observe logs every argument by default, which would
+# dump the whole Chroma collection into the trace — and would leak any object
+# passed here in future. Log the query explicitly instead.
+@observe(name="retrieval", capture_input=False)
 def retrieve(col, query, k=2):
+    get_client().update_current_span(input={"query": query, "k": k})
+
     res = col.query(query_texts=[query], n_results=k)
 
     ids = res["ids"][0]
@@ -56,10 +66,15 @@ def retrieve(col, query, k=2):
     return keep_ids, keep_docs
 
 
+@observe(name="rag_query", capture_input=False)
 def answer(query, col):
+    get_client().update_current_span(input={"query": query})
+
     _ids, chunks = retrieve(col, query)
+
     if not chunks:
         return REFUSAL, []
+
     context = "\n\n".join(chunks)
 
     prompt = f"""Answer the question using ONLY the context below.
@@ -71,4 +86,5 @@ Keep the answer to one sentence.
 </context>
 
 Question: {query}"""
+
     return ask(prompt), chunks
