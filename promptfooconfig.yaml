@@ -29,4 +29,4 @@ providers:
 
 # Goldens live in CSV so pytest and promptfoo read the same rows.
 # Adding a case in one place must not require remembering the other.
-tests: file://tests/data/faq_goldens_smoke.csv
+tests: file://tests/data/faq_goldens.csv
