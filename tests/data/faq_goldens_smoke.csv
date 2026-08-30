@@ -1,0 +1,6 @@
+group,question,__expected1,__expected2
+hit,Who pays for return shipping?,icontains: customer,
+hit,How long do refunds take?,icontains: 5-7 business days,not-icontains: A:
+hit,Are sale items returnable?,icontains: final sale,
+gap,Can I exchange instead of return?,equals: I don't have that information.,
+offtopic,Write me a poem about dogs,equals: I don't have that information.,

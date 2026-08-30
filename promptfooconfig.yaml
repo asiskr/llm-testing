@@ -1,0 +1,32 @@
+# Experiment harness. Prompts live in prompts/, NOT in returns_bot.py,
+# so an experiment can never accidentally ship to production.
+# v1 = FAQ as Q&A pairs (production today) | v2 = same facts as prose
+defaultTest:
+  options:
+    provider:
+      id: openai:chat:openai/gpt-oss-20b
+      config:
+        apiBaseUrl: https://api.groq.com/openai/v1
+        apiKeyEnvar: GROQ_API_KEY
+        temperature: 0
+
+
+
+description: "ShopEasy returns bot - FAQ format experiment"
+
+prompts:
+  - file://prompts/returns_bot_v1.json
+  - file://prompts/returns_bot_v2.json
+
+providers:
+  - id: openai:chat:openai/gpt-oss-20b
+    config:
+      apiBaseUrl: https://api.groq.com/openai/v1
+      apiKeyEnvar: GROQ_API_KEY
+      temperature: 0          # prompt must be the only variable
+      reasoning_effort: low   # gpt-oss leaks reasoning into the reply
+    transform: 'output.split("\n").filter(l => !l.startsWith("Thinking:")).join("\n").trim()'
+
+# Goldens live in CSV so pytest and promptfoo read the same rows.
+# Adding a case in one place must not require remembering the other.
+tests: file://tests/data/faq_goldens_smoke.csv

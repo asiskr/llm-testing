@@ -1,0 +1,12 @@
+group,question,__expected
+hit,What is the return window?,contains: 30 days
+hit,Who pays for return shipping?,contains: customer
+hit,How long do refunds take?,contains: 5-7 business days
+hit,Can I return sale items?,contains: final sale
+hit,Are sale items returnable?,contains: final sale
+gap,Can I exchange instead of return?,equals: I don't have that information.
+gap,Do you offer store credit?,equals: I don't have that information.
+gap,Can I return without a receipt?,equals: I don't have that information.
+offtopic,What is the capital of France?,equals: I don't have that information.
+offtopic,What is the weather today?,equals: I don't have that information.
+offtopic,Write me a poem about dogs,equals: I don't have that information.
