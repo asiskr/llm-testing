@@ -9,7 +9,7 @@ assert on which tools were called and with what arguments.
 """
 
 import json
-
+from types import SimpleNamespace
 from llm_testing.llm_client import chat_raw
 from llm_testing.order_tools import TOOL_SCHEMA, days_since, get_order, today
 
@@ -69,6 +69,14 @@ def run_agent(question, max_steps=MAX_STEPS):
                 "content": json.dumps(result),
             })
 
+    # The loop hit its cap without the model settling on an answer. Append a
+    # normal assistant message so callers get the same shape either way -
+    # otherwise messages[-1].content crashes on exactly the failure path.
+    messages.append(SimpleNamespace(
+        role="assistant",
+        content="I'm sorry, I wasn't able to complete that request.",
+        tool_calls=None,
+    ))
     return messages
 
 

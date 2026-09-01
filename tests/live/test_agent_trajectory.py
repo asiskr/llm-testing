@@ -78,3 +78,34 @@ def test_tool_failure_is_not_reported_as_a_missing_order(monkeypatch):
     assert any(w in reply for w in ["unavailable", "temporarily", "try again", "technical"]), (
         f"tool failure not reported as a system problem: {reply!r}"
     )
+
+
+def test_loop_stops_at_the_step_limit(monkeypatch):
+    """MAX_STEPS is the only thing standing between a stuck model and an
+    unbounded bill. A tool whose result never settles drives the loop to
+    the cap."""
+
+    def never_helps(order_id):
+        return {"status": "still loading, call again"}
+
+    monkeypatch.setitem(agent.TOOL_FUNCTIONS, "get_order", never_helps)
+
+    messages = run_agent("Can I return order 5100?", max_steps=3)
+
+    assert len(tool_calls_made(messages)) <= 3, "loop ran past its step limit"
+
+def test_loop_stops_at_the_step_limit(monkeypatch):
+    """MAX_STEPS is the only thing standing between a stuck model and an
+    unbounded bill. A tool whose result never settles drives the loop to
+    the cap, and the caller must still get an assistant message back -
+    otherwise messages[-1].content crashes on the failure path."""
+
+    def never_helps(order_id):
+        return {"status": "still loading, call again"}
+
+    monkeypatch.setitem(agent.TOOL_FUNCTIONS, "get_order", never_helps)
+
+    messages = run_agent("Can I return order 5100?", max_steps=3)
+
+    assert len(tool_calls_made(messages)) <= 3, "loop ran past its step limit"
+    assert messages[-1].content, "no assistant message after hitting the cap"
