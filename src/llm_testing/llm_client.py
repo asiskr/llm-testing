@@ -38,3 +38,22 @@ def chat(messages, temperature=0):
         temperature=temperature,
     )
     return response.choices[0].message.content
+
+
+def chat_raw(messages, tools=None, temperature=0):
+    """Return the full message object, not just its text.
+
+    Tool calls arrive in message.tool_calls and message.content is None in
+    that case, so an agent loop cannot use chat() - it would silently get
+    None back. Kept separate from chat() so existing callers are untouched.
+    """
+    kwargs = {
+        "model": MODEL_NAME,
+        "messages": messages,
+        "temperature": temperature,
+    }
+    if tools:
+        kwargs["tools"] = tools
+
+    response = get_client().chat.completions.create(**kwargs)
+    return response.choices[0].message
