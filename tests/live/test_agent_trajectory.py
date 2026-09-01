@@ -7,6 +7,7 @@ arguments, in what order - is asserted separately from the answer.
 
 import pytest
 import re
+import llm_testing.returns_agent as agent
 
 from llm_testing.returns_agent import run_agent, tool_calls_made
 
@@ -41,3 +42,39 @@ def test_does_not_produce_a_date_without_calling_a_tool():
         assert not re.search(r"\d{4}[-\u2011]\d{2}[-\u2011]\d{2}", reply), (
             f"agent stated a date with no tool call: {reply!r}"
         )
+
+
+def test_tool_failure_is_not_reported_as_a_missing_order(monkeypatch):
+    """A down service and a non-existent order are different failures. Saying
+    "not found" when the service is down sends the customer chasing a ghost."""
+
+    def broken(order_id):
+        raise ConnectionError("order service unreachable")
+
+    monkeypatch.setitem(agent.TOOL_FUNCTIONS, "get_order", broken)
+
+    reply = run_agent("Can I return order 5100?")[-1].content.lower()
+
+    assert "not found" not in reply and "couldn't find" not in reply, (
+        f"tool failure reported as a missing order: {reply!r}"
+    )
+
+def test_tool_failure_is_not_reported_as_a_missing_order(monkeypatch):
+    """A down service and a non-existent order are different failures. Saying
+    "not found" when the service is down sends the customer chasing a ghost.
+
+    Asserted on meaning, not wording: the model rephrases every run, and its
+    output carries Unicode lookalikes (\u202f, \u2011) that break substring
+    matching silently.
+    """
+
+    def broken(order_id):
+        raise ConnectionError("order service unreachable")
+
+    monkeypatch.setitem(agent.TOOL_FUNCTIONS, "get_order", broken)
+
+    reply = run_agent("Can I return order 5100?")[-1].content.lower()
+
+    assert any(w in reply for w in ["unavailable", "temporarily", "try again", "technical"]), (
+        f"tool failure not reported as a system problem: {reply!r}"
+    )
