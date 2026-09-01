@@ -8,7 +8,7 @@ from llm_testing.order_tools import days_since, get_order, today
 
 from types import SimpleNamespace
 
-from llm_testing.returns_agent import tool_calls_made
+from llm_testing.returns_agent import tool_calls_made, TOOL_SCHEMA, TOOL_FUNCTIONS
 
 
 def test_known_order_is_found():
@@ -58,3 +58,21 @@ def test_dict_messages_do_not_crash_the_extractor():
     """The list mixes plain dicts (system/user/tool) with SDK objects. The
     hasattr guard is what stops m.tool_calls blowing up on a dict."""
     assert tool_calls_made([{"role": "user", "content": "hi"}]) == []
+
+
+def test_tool_descriptions_are_distinct():
+    """Wrong-tool selection is driven by overlapping descriptions. This does
+    not prove the model chooses well - it stops two tools silently ending up
+    with the same description as the schema grows."""
+    descriptions = [t["function"]["description"] for t in TOOL_SCHEMA]
+
+    assert len(set(descriptions)) == len(descriptions), "duplicate tool descriptions"
+
+def test_every_schema_tool_has_a_function():
+    """Adding a tool means editing TOOL_SCHEMA and TOOL_FUNCTIONS separately.
+    Missing the second one is a KeyError at runtime, mid-conversation."""
+    schema_names = {t["function"]["name"] for t in TOOL_SCHEMA}
+
+    assert schema_names == set(TOOL_FUNCTIONS), (
+        f"schema and functions disagree: {schema_names ^ set(TOOL_FUNCTIONS)}"
+    )
