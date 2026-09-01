@@ -6,6 +6,7 @@ arguments, in what order - is asserted separately from the answer.
 """
 
 import pytest
+import re
 
 from llm_testing.returns_agent import run_agent, tool_calls_made
 
@@ -27,3 +28,16 @@ def test_passes_the_id_the_customer_asked_about():
 
     assert first_name == "get_order"
     assert first_args["order_id"] == "5100", f"wrong id passed: {first_args}"
+
+
+def test_does_not_produce_a_date_without_calling_a_tool():
+    """The agent has no clock. A date in the reply that came from no tool call
+    is a guess, even when it happens to be right."""
+    messages = run_agent("What day is it today?")
+    calls = tool_calls_made(messages)
+    reply = messages[-1].content
+
+    if not calls:
+        assert not re.search(r"\d{4}[-\u2011]\d{2}[-\u2011]\d{2}", reply), (
+            f"agent stated a date with no tool call: {reply!r}"
+        )

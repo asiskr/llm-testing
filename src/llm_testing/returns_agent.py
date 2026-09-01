@@ -11,12 +11,13 @@ assert on which tools were called and with what arguments.
 import json
 
 from llm_testing.llm_client import chat_raw
-from llm_testing.order_tools import TOOL_SCHEMA, days_since, get_order
+from llm_testing.order_tools import TOOL_SCHEMA, days_since, get_order, today
 
 # Name in TOOL_SCHEMA -> the real function. Names must match exactly.
 TOOL_FUNCTIONS = {
     "get_order": get_order,
     "days_since": days_since,
+    "today": today,
 }
 
 AGENT_PROMPT = """You are a returns support agent for ShopEasy.

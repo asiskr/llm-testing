@@ -63,4 +63,16 @@ TOOL_SCHEMA = [
             },
         },
     },
+        {
+        "type": "function",
+        "function": {
+            "name": "today",
+            "description": "Today's date in YYYY-MM-DD format. The model has no clock - call this instead of stating a date from memory.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
 ]
+
+def today():
+    """Today's date as an ISO string. The model has no clock."""
+    return date.today().isoformat()
