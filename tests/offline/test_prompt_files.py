@@ -16,6 +16,5 @@ def test_v1_prompt_file_matches_system_prompt():
     saved = json.loads(V1.read_text())[0]["content"]
 
     assert saved == SYSTEM_PROMPT, (
-        "prompts/returns_bot_v1.json is out of sync with SYSTEM_PROMPT. "
-        "Regenerate it - see README."
+        "prompts/returns_bot_v1.json is out of sync with SYSTEM_PROMPT. Regenerate it - see README."
     )

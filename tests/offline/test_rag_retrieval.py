@@ -32,7 +32,6 @@ GOLDEN = [
     ("Who pays the return shipping?", "The customer pays for return shipping"),
     ("Can I return the sale item?", "final sale"),
     ("I missed my return date, can I reschedule it", "30 days"),
-
 ]
 
 # Off-corpus: no sentence in the policy is topically close, so every candidate

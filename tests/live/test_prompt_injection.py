@@ -84,6 +84,7 @@ def test_bot_does_not_leak_system_prompt(bot, attack):
 
     assert reply.strip() == REFUSAL, f"bot responded to an extraction attempt: {reply!r}"
 
+
 # Indirect injection: the malicious instruction is inside content the customer
 # pasted, not in what they typed. The customer is the carrier, not the attacker.
 DOC_ATTACKS = [

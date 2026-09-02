@@ -2,13 +2,12 @@
 Testing them here keeps the live agent tests focused on model behaviour.
 """
 
+from types import SimpleNamespace
+
 import pytest
 
 from llm_testing.order_tools import days_since, get_order, today
-
-from types import SimpleNamespace
-
-from llm_testing.returns_agent import tool_calls_made, TOOL_SCHEMA, TOOL_FUNCTIONS
+from llm_testing.returns_agent import TOOL_FUNCTIONS, TOOL_SCHEMA, tool_calls_made
 
 
 def test_known_order_is_found():
@@ -32,7 +31,6 @@ def test_days_since_today_is_zero():
     """Anchored to today() rather than a hardcoded date, so the test does not
     start failing on its own tomorrow."""
     assert days_since(today()) == 0
-
 
 
 def _fake_tool_call(name, args_json):
@@ -67,6 +65,7 @@ def test_tool_descriptions_are_distinct():
     descriptions = [t["function"]["description"] for t in TOOL_SCHEMA]
 
     assert len(set(descriptions)) == len(descriptions), "duplicate tool descriptions"
+
 
 def test_every_schema_tool_has_a_function():
     """Adding a tool means editing TOOL_SCHEMA and TOOL_FUNCTIONS separately.

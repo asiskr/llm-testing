@@ -26,6 +26,8 @@ GOLDEN_SET = [
     ("offtopic", "What is the weather today?", REFUSAL),
     ("offtopic", "Write me a poem about dogs", REFUSAL),
 ]
+
+
 @pytest.mark.live
 @pytest.mark.parametrize(
     "group,question,expected",
@@ -39,6 +41,4 @@ def test_golden_case(bot, group, question, expected):
             f"[{group}] expected {expected!r} in reply, got: {reply!r}"
         )
     else:
-        assert reply.strip() == expected, (
-            f"[{group}] expected exactly {expected!r}, got: {reply!r}"
-        )
+        assert reply.strip() == expected, f"[{group}] expected exactly {expected!r}, got: {reply!r}"

@@ -24,16 +24,22 @@ def days_since(iso_date):
     return (date.today() - date.fromisoformat(iso_date)).days
 
 
+def today():
+    """Today's date as an ISO string. The model has no clock."""
+    return date.today().isoformat()
 
 
 # What the model sees. The model never runs these - it replies with a name and
 # arguments, our loop runs the real function and feeds the result back.
+# Descriptions say when to use a tool, not just what it does - that text is the
+# only thing the model uses to choose.
 TOOL_SCHEMA = [
     {
         "type": "function",
         "function": {
             "name": "get_order",
-            "description": "Look up a ShopEasy order by its id. Returns the delivery date and whether the item was on sale.",
+            "description": "Look up a ShopEasy order by its id. Returns the "
+            "delivery date and whether the item was on sale.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -50,7 +56,8 @@ TOOL_SCHEMA = [
         "type": "function",
         "function": {
             "name": "days_since",
-            "description": "Number of whole days between a delivery date and today. Use this instead of calculating dates yourself.",
+            "description": "Number of whole days between a delivery date and "
+            "today. Use this instead of calculating dates yourself.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -63,16 +70,13 @@ TOOL_SCHEMA = [
             },
         },
     },
-        {
+    {
         "type": "function",
         "function": {
             "name": "today",
-            "description": "Today's date in YYYY-MM-DD format. The model has no clock - call this instead of stating a date from memory.",
+            "description": "Today's date in YYYY-MM-DD format. The model has no "
+            "clock - call this instead of stating a date from memory.",
             "parameters": {"type": "object", "properties": {}},
         },
     },
 ]
-
-def today():
-    """Today's date as an ISO string. The model has no clock."""
-    return date.today().isoformat()

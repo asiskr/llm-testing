@@ -5,10 +5,11 @@ a correct-looking answer. So the trajectory - which tools ran, with what
 arguments, in what order - is asserted separately from the answer.
 """
 
-import pytest
 import re
-import llm_testing.returns_agent as agent
 
+import pytest
+
+import llm_testing.returns_agent as agent
 from llm_testing.returns_agent import run_agent, tool_calls_made
 
 pytestmark = pytest.mark.live
@@ -46,26 +47,10 @@ def test_does_not_produce_a_date_without_calling_a_tool():
 
 def test_tool_failure_is_not_reported_as_a_missing_order(monkeypatch):
     """A down service and a non-existent order are different failures. Saying
-    "not found" when the service is down sends the customer chasing a ghost."""
-
-    def broken(order_id):
-        raise ConnectionError("order service unreachable")
-
-    monkeypatch.setitem(agent.TOOL_FUNCTIONS, "get_order", broken)
-
-    reply = run_agent("Can I return order 5100?")[-1].content.lower()
-
-    assert "not found" not in reply and "couldn't find" not in reply, (
-        f"tool failure reported as a missing order: {reply!r}"
-    )
-
-def test_tool_failure_is_not_reported_as_a_missing_order(monkeypatch):
-    """A down service and a non-existent order are different failures. Saying
     "not found" when the service is down sends the customer chasing a ghost.
 
     Asserted on meaning, not wording: the model rephrases every run, and its
-    output carries Unicode lookalikes (\u202f, \u2011) that break substring
-    matching silently.
+    output carries Unicode lookalikes that break substring matching silently.
     """
 
     def broken(order_id):
@@ -79,20 +64,6 @@ def test_tool_failure_is_not_reported_as_a_missing_order(monkeypatch):
         f"tool failure not reported as a system problem: {reply!r}"
     )
 
-
-def test_loop_stops_at_the_step_limit(monkeypatch):
-    """MAX_STEPS is the only thing standing between a stuck model and an
-    unbounded bill. A tool whose result never settles drives the loop to
-    the cap."""
-
-    def never_helps(order_id):
-        return {"status": "still loading, call again"}
-
-    monkeypatch.setitem(agent.TOOL_FUNCTIONS, "get_order", never_helps)
-
-    messages = run_agent("Can I return order 5100?", max_steps=3)
-
-    assert len(tool_calls_made(messages)) <= 3, "loop ran past its step limit"
 
 def test_loop_stops_at_the_step_limit(monkeypatch):
     """MAX_STEPS is the only thing standing between a stuck model and an
