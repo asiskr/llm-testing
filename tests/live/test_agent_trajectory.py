@@ -80,3 +80,18 @@ def test_loop_stops_at_the_step_limit(monkeypatch):
 
     assert len(tool_calls_made(messages)) <= 3, "loop ran past its step limit"
     assert messages[-1].content, "no assistant message after hitting the cap"
+
+
+def test_sale_item_answer_costs_two_tool_calls():
+    """Documents a known inefficiency rather than forbidding it.
+
+    A final-sale item can never be returned, so days_since cannot change the
+    answer - yet the model calls it. days_since is read-only, so this costs a
+    round trip and nothing more. If a tool with side effects is ever added,
+    this becomes a defect and this test should start asserting, not recording.
+    """
+    calls = tool_calls_made(run_agent("Can I return order 6402?"))
+    names = [name for name, _ in calls]
+
+    assert names[0] == "get_order", f"trajectory did not start with a lookup: {names}"
+    assert len(names) <= 3, f"more tool calls than expected: {names}"
