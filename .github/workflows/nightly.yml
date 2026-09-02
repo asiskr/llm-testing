@@ -1,9 +1,7 @@
 name: Nightly
 
-on:
+"on":
   schedule:
-    # 02:00 UTC - off-peak for Groq's free tier, and results are ready
-    # before the working day starts.
     - cron: "0 2 * * *"
   workflow_dispatch:
 
