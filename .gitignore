@@ -25,8 +25,16 @@ dist/
 temp_test_run_data.json
 chat_log.jsonl
 
+# promptfoo eval output (regenerate with `promptfoo eval`)
+.promptfoo/
+promptfoo-output.*
+docs/promptfoo-matrix.json
+
 # RAG vector store (rebuilt from data/policy.txt)
 chroma_db/
+
+# Local editor / agent config
+.claude/
 
 # OS
 .DS_Store

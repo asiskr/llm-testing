@@ -15,6 +15,8 @@ from llm_testing.guardrails import count_sentences, within_sentence_limit
         ("One. Two. Three.", 3),
         ("Refunds take 5-7 business days.", 1),
         ("Version v2.0 applies.", 1),
+        # Commas and mid-sentence punctuation must not split.
+        ("you, me and him.", 1),
         # Known limit: abbreviations over-count. Pinned so a future change
         # to the regex shows up here instead of surprising someone later.
         ("Contact Mr. Sharma today.", 2),
