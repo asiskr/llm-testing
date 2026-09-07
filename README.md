@@ -1,8 +1,8 @@
 [![CI](https://github.com/asiskr/llm-testing/actions/workflows/ci.yml/badge.svg)](https://github.com/asiskr/llm-testing/actions/workflows/ci.yml)
+
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-
 
 # llm-testing
 
@@ -166,6 +166,29 @@ Run from the project root: `python -m experiments.<name>`
 | AnswerRelevancy | 0.7 | 5 | 4/5 |
 | ContextualRelevancy | 0.5 | 3 | 3/3 |
 
+## Observability
+
+The RAG pipeline is traced with [Langfuse](https://langfuse.com). `retrieve()`
+and `answer()` are wrapped in `@observe`, so every query produces a nested
+trace:
+
+    rag_query        850ms   query in, answer out
+      └─ retrieval    12ms   which chunk IDs came back
+
+![Langfuse trace](docs/langfuse-trace.png)
+
+Both spans use `capture_input=False` and log the query explicitly — the
+default captures every argument, which would dump the Chroma collection into
+the trace and would leak any object passed there in future.
+
+This exists because a wrong answer has three possible causes — chunking,
+retrieval, generation — and the answer alone distinguishes none of them. The
+retrieved chunk IDs do.
+
+It also feeds the golden set: `test_known_gap_sale_item_phrasing` came from a
+manual session where the bot confidently gave a wrong answer, and the trace
+showed the sale-items chunk had never been retrieved.
+
 **Why these numbers**
 
 - Faithfulness requires 5/5 — a single hallucinated run means a user could see a
@@ -180,19 +203,41 @@ Run from the project root: `python -m experiments.<name>`
 | Tier | What | When |
 |---|---|---|
 | Offline | chunking, retrieval, prompt invariants, message assembly | every push (CI) |
-| Live smoke | 3 judged metrics, one query each, N=1 | every push (CI) |
-| Full eval | all goldens × all metrics, N=5 | on demand — `make test-live` |
+| Live smoke | 3 tests — retrieval, faithfulness, refusal — N=1 | every push (CI) |
+| Full eval | all goldens × all metrics, N=5 | nightly (not yet automated) |
 
-The smoke job runs one test per failure mode rather than one per metric:
-`recall_correct` (retrieval broke), `faithful_to_chunks` (the model invented
-something), `is_refused` (the refusal path broke). It skips on pull requests
-from forks, which have no access to secrets.
+The smoke job runs one test per failure mode, not per metric: `recall_correct`
+(retrieval broke), `faithful_to_chunks` (hallucination), `is_refused` (refusal
+broke). It skips on pull requests from forks, which have no access to secrets.
 
-Live evals are rate-limited by the free tier: Groq allows 8000 tokens/min, and a
-full live run burns that in under a minute. `pyproject.toml` retries **only** on
-rate-limit errors (`--only-rerun RateLimitError`), never on assertion failures,
-so a real regression still shows up red.
+## Roadmap
+
+- [x] Offline tests that run in CI with no credentials
+- [x] Prompt-injection tests
+- [x] Packaged layout, `pyproject.toml`, ruff, pre-commit, GitHub Actions
+- [ ] Pass-rate assertions over N runs (`pytest-repeat` is installed)
+- [ ] Pydantic schema validation in place of hand-written key checks
+- [ ] Nightly scheduled workflow for the full eval matrix
+- [ ] Hybrid retrieval (keyword + vector) and a reranking step
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+- `similarity` assertions are not used. They need an embedding provider;
+  Groq serves chat only, and a local model would add ~2.5 GB to CI installs.
+  Revisit with a hosted embedding API.
+## Prompt experiment (promptfoo)
+
+Same FAQ facts, two formats. 5-case smoke subset, temperature 0.
+
+| | v1 (Q&A) | v2 (prose) |
+|---|---|---|
+| Asserts passed | 5/6 | 6/6 |
+| Tokens | 1,929 | 1,737 |
+| Latency | 370ms | 293ms |
+
+v1 leaked its own `A:` formatting into replies — the model copied the
+Q&A shape it saw in the prompt. Caught by `not-icontains: A:`;
+a facts-only assertion passed it.
