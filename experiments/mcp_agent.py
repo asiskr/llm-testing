@@ -7,7 +7,7 @@ import os
 
 from dotenv import load_dotenv
 from groq import Groq
-from langfuse import observe
+from langfuse import get_client, observe
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -86,42 +86,53 @@ async def run_tool(session, call):
         except TypeError as e:
             return args, f"Bad arguments: {e}"
 
+    if session is None:
+        return args, f"Tool unavailable: {name}"
+
     try:
         result = await session.call_tool(name, args)
         return args, result.content[0].text
     except Exception as e:
         # An MCP tool is a network dependency: it can be down, slow or refuse.
-        # Send the failure back as text so the model can tell the user.
+        # Return the failure as text so the model can tell the user.
         return args, f"Tool failed: {e}"
 
 
 @observe()
+async def agent_loop(question, tools, session):
+    messages = [{"role": "user", "content": question}]
+
+    for _ in range(MAX_STEPS):
+        msg = call_model(messages, tools)
+        messages.append(msg)
+
+        if not msg.tool_calls:
+            return msg.content
+
+        for call in msg.tool_calls:
+            args, result = await run_tool(session, call)
+            print(call.function.name, args, "->", result)
+            messages.append(
+                {"role": "tool", "tool_call_id": call.id, "content": result}
+            )
+
+    return "Stopped: hit the step limit"
+
+
+@observe()
 async def run_agent(question: str) -> str:
-    async with stdio_client(SERVER) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-
-            # Schemas come from the server so they cannot drift out of sync.
-            remote = await session.list_tools()
-            tools = LOCAL_TOOLS + [to_openai_schema(t) for t in remote.tools]
-
-            messages = [{"role": "user", "content": question}]
-
-            for _ in range(MAX_STEPS):
-                msg = call_model(messages, tools)
-                messages.append(msg)
-
-                if not msg.tool_calls:
-                    return msg.content
-
-                for call in msg.tool_calls:
-                    args, result = await run_tool(session, call)
-                    print(call.function.name, args, "->", result)
-                    messages.append(
-                        {"role": "tool", "tool_call_id": call.id, "content": result}
-                    )
-
-            return "Stopped: hit the step limit"
+    try:
+        async with stdio_client(SERVER) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                remote = await session.list_tools()
+                tools = LOCAL_TOOLS + [to_openai_schema(t) for t in remote.tools]
+                return await agent_loop(question, tools, session)
+    except Exception as e:
+        # The server can be missing, down or refuse the handshake. Degrade to
+        # local tools instead of taking the whole agent down with it.
+        print(f"MCP unavailable: {e}")
+        return await agent_loop(question, LOCAL_TOOLS, session=None)
 
 
 print(
@@ -131,3 +142,5 @@ print(
         )
     )
 )
+
+get_client().flush()  # async scripts exit before Langfuse's background batch sends
