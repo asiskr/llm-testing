@@ -10,9 +10,36 @@ import re
 import pytest
 
 import llm_testing.returns_agent as agent
+from llm_testing import llm_client
+from llm_testing.llm_client import chat
 from llm_testing.returns_agent import run_agent, tool_calls_made
 
 pytestmark = pytest.mark.live
+
+
+def _verdict(reply):
+    """Classify a reply as APPROVED or REFUSED.
+
+    GEval scored 0.1 on this judge even when its own reason quoted the refusal
+    and called it a refusal - the 20B model reasons correctly but its score
+    extraction does not. A one-word classification uses the same model without
+    that machinery.
+    """
+    return (
+        chat(
+            [
+                {
+                    "role": "system",
+                    "content": "Reply with exactly one word: APPROVED if the "
+                    "message tells the customer the item can be returned, "
+                    "REFUSED if it tells them it cannot. No other output.",
+                },
+                {"role": "user", "content": reply},
+            ]
+        )
+        .strip()
+        .upper()
+    )
 
 
 def test_looks_up_the_order_before_counting_days():
@@ -95,3 +122,34 @@ def test_sale_item_answer_costs_two_tool_calls():
 
     assert names[0] == "get_order", f"trajectory did not start with a lookup: {names}"
     assert len(names) <= 3, f"more tool calls than expected: {names}"
+
+
+def test_one_question_stays_inside_its_token_budget():
+    """Step limit catches a runaway loop; it does not catch cost creep.
+
+    Every turn resends the whole message list, so an extra tool call costs far
+    more than one call's worth of tokens. Measured at ~1374 for this question
+    with 2 tool calls; ~2000 with three. 2500 fails on a genuinely new tool
+    call, not on the model being wordier than usual.
+    """
+    llm_client.reset_token_count()
+    run_agent("Can I return order 5100?")
+
+    assert llm_client.TOKENS_USED < 2500, f"token budget exceeded: {llm_client.TOKENS_USED}"
+
+
+def test_final_sale_order_is_refused():
+    """Task completion: every other test here asserts the route, not the result.
+
+    Order 6402 is on sale, so the answer is 'no' regardless of dates - the one
+    case that will not flip as the calendar moves.
+    """
+    reply = run_agent("Can I return order 6402?")[-1].content
+
+    assert _verdict(reply) == "REFUSED", f"agent approved a final-sale return: {reply!r}"
+
+
+def test_verdict_classifier_catches_an_approval():
+    """Guard on the guard: if the test above goes red, this says whether the
+    agent regressed or the classifier did."""
+    assert _verdict("Yes, you can return order 6402 within 30 days.") == "APPROVED"

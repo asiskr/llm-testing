@@ -16,6 +16,11 @@ MODEL_NAME = "openai/gpt-oss-20b"
 
 _client = None
 
+# Running token total across chat_raw calls. An agent makes several API calls
+# per question, so a single last-call value would miss most of the cost.
+# Tests reset this before a run and read it after.
+TOKENS_USED = 0
+
 
 def get_client():
     """Return the shared Groq client, constructing it on first call."""
@@ -23,6 +28,12 @@ def get_client():
     if _client is None:
         _client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     return _client
+
+
+def reset_token_count():
+    """Zero the counter before measuring one agent run."""
+    global TOKENS_USED
+    TOKENS_USED = 0
 
 
 def ask(prompt, temperature=0):
@@ -56,4 +67,8 @@ def chat_raw(messages, tools=None, temperature=0):
         kwargs["tools"] = tools
 
     response = get_client().chat.completions.create(**kwargs)
+
+    global TOKENS_USED
+    TOKENS_USED += response.usage.total_tokens
+
     return response.choices[0].message
