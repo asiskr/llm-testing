@@ -14,8 +14,10 @@ import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+import sys
+
 SERVER = StdioServerParameters(
-    command="python",
+    command=sys.executable,
     args=["-m", "llm_testing.orders_mcp_server"],
 )
 

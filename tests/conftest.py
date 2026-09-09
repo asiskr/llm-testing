@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from llm_testing.llm_client import chat  # noqa: E402
 from llm_testing.returns_bot import ask_bot as _ask_bot  # noqa: E402  (must follow load_dotenv)
 
 # Model used by DeepEval to *judge* the answers. Routed to Groq via the
@@ -27,3 +28,28 @@ def bot():
         return _ask_bot(question)
 
     return _cached
+
+
+def _verdict(reply):
+    """Classify a reply as APPROVED or REFUSED.
+
+    GEval scored 0.1 on this judge even when its own reason quoted the refusal
+    and called it a refusal - the 20B model reasons correctly but its score
+    extraction does not. A one-word classification uses the same model without
+    that machinery.
+    """
+    return (
+        chat(
+            [
+                {
+                    "role": "system",
+                    "content": "Reply with exactly one word: APPROVED if the "
+                    "message tells the customer the item can be returned, "
+                    "REFUSED if it tells them it cannot. No other output.",
+                },
+                {"role": "user", "content": reply},
+            ]
+        )
+        .strip()
+        .upper()
+    )

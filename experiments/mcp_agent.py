@@ -134,11 +134,10 @@ async def run_agent(question: str) -> str:
         print(f"MCP unavailable: {e}")
         return await agent_loop(question, LOCAL_TOOLS, session=None)
 
-
 print(
     asyncio.run(
         run_agent(
-            "Has order A-1029 shipped? If it has already shipped, start a return for it because it is too small."
+            "Order A-1029 doesn't fit me. Sort it out."
         )
     )
 )

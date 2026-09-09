@@ -11,52 +11,10 @@ import pytest
 
 import llm_testing.returns_agent as agent
 from llm_testing import llm_client
-from llm_testing.llm_client import chat
 from llm_testing.returns_agent import run_agent, tool_calls_made
+from tests.conftest import _verdict
 
 pytestmark = pytest.mark.live
-
-
-def _verdict(reply):
-    """Classify a reply as APPROVED or REFUSED.
-
-    GEval scored 0.1 on this judge even when its own reason quoted the refusal
-    and called it a refusal - the 20B model reasons correctly but its score
-    extraction does not. A one-word classification uses the same model without
-    that machinery.
-    """
-    return (
-        chat(
-            [
-                {
-                    "role": "system",
-                    "content": "Reply with exactly one word: APPROVED if the "
-                    "message tells the customer the item can be returned, "
-                    "REFUSED if it tells them it cannot. No other output.",
-                },
-                {"role": "user", "content": reply},
-            ]
-        )
-        .strip()
-        .upper()
-    )
-
-
-def test_looks_up_the_order_before_counting_days():
-    """Trajectory: the delivery date has to come from the tool, not the model."""
-    calls = tool_calls_made(run_agent("Can I return order 5100?"))
-    names = [name for name, _ in calls]
-
-    assert names[:2] == ["get_order", "days_since"], f"unexpected trajectory: {names}"
-
-
-def test_passes_the_id_the_customer_asked_about():
-    """Tool-call correctness: right tool is not enough, the args must be right."""
-    calls = tool_calls_made(run_agent("Can I return order 5100?"))
-    first_name, first_args = calls[0]
-
-    assert first_name == "get_order"
-    assert first_args["order_id"] == "5100", f"wrong id passed: {first_args}"
 
 
 def test_does_not_produce_a_date_without_calling_a_tool():
@@ -109,21 +67,6 @@ def test_loop_stops_at_the_step_limit(monkeypatch):
     assert messages[-1].content, "no assistant message after hitting the cap"
 
 
-def test_sale_item_answer_costs_two_tool_calls():
-    """Documents a known inefficiency rather than forbidding it.
-
-    A final-sale item can never be returned, so days_since cannot change the
-    answer - yet the model calls it. days_since is read-only, so this costs a
-    round trip and nothing more. If a tool with side effects is ever added,
-    this becomes a defect and this test should start asserting, not recording.
-    """
-    calls = tool_calls_made(run_agent("Can I return order 6402?"))
-    names = [name for name, _ in calls]
-
-    assert names[0] == "get_order", f"trajectory did not start with a lookup: {names}"
-    assert len(names) <= 3, f"more tool calls than expected: {names}"
-
-
 def test_one_question_stays_inside_its_token_budget():
     """Step limit catches a runaway loop; it does not catch cost creep.
 
@@ -138,18 +81,7 @@ def test_one_question_stays_inside_its_token_budget():
     assert llm_client.TOKENS_USED < 2500, f"token budget exceeded: {llm_client.TOKENS_USED}"
 
 
-def test_final_sale_order_is_refused():
-    """Task completion: every other test here asserts the route, not the result.
-
-    Order 6402 is on sale, so the answer is 'no' regardless of dates - the one
-    case that will not flip as the calendar moves.
-    """
-    reply = run_agent("Can I return order 6402?")[-1].content
-
-    assert _verdict(reply) == "REFUSED", f"agent approved a final-sale return: {reply!r}"
-
-
 def test_verdict_classifier_catches_an_approval():
-    """Guard on the guard: if the test above goes red, this says whether the
-    agent regressed or the classifier did."""
+    """Guard on the guard: if a golden's expect_verdict goes red, this says
+    whether the agent regressed or the classifier did."""
     assert _verdict("Yes, you can return order 6402 within 30 days.") == "APPROVED"
